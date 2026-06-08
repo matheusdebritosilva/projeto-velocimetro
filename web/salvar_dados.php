@@ -17,7 +17,7 @@ if (isset($_POST['velocidade']) && isset($_POST['rpm'])) {
     $rpm = floatval($_POST['rpm']);
 
     // Insere no banco de dados
-    $stmt = $conn->prepare("INSERT INTO telemetria (velocidade, rpm) VALUES (?, ?)");
+    $stmt = $conn->prepare("INSERT INTO dados_telemetria (velocidade, rpm) VALUES (?, ?)");
     $stmt->bind_param("dd", $vel, $rpm);
     
     if ($stmt->execute()) {

@@ -14,7 +14,7 @@ if ($conn->connect_error) {
 }
 
 // Busca estritamente o último registro inserido
-$sql = "SELECT velocidade, rpm FROM telemetria ORDER BY id DESC LIMIT 1";
+$sql = "SELECT velocidade, rpm FROM dados_telemetria ORDER BY id DESC LIMIT 1";
 $result = $conn->query($sql);
 
 if ($result && $result->num_rows > 0) {
