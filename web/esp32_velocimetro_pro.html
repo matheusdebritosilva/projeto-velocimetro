@@ -245,7 +245,7 @@ const histChart = new Chart(document.getElementById('histChart'), {
 
 // INTEGRAÇÃO REAL COM O BANCO DE DADOS (Substitui o simulador falso)
 function buscarDadosTelemetria() {
-  fetch('buscar_ultimo.php') // Puxa dados reais da sua API PHP
+  fetch('./buscar_ultimo.php')
     .then(response => response.json())
     .then(data => {
       const dVel = parseFloat(data.velocidade || 0);
