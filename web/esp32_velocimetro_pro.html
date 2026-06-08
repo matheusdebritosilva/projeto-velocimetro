@@ -27,8 +27,8 @@
         .gauge-card:nth-child(2){animation-delay:.1s}
         .gauge-card::before{content:'';position:absolute;inset:0;border-radius:16px;background:radial-gradient(ellipse at 50% 0%,#0033ff08,transparent 60%);pointer-events:none}
         .gauge-title{font-size:10px;color:#4466aa;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;font-weight:500}
-        .gauge-canvas-wrap{position:relative;display:inline-block}
-        .gauge-number{position:absolute;bottom:8px;left:0;right:0;text-align:center}
+        .gauge-canvas-wrap{position:relative;display:block;width:100%}
+        .gauge-canvas-wrap canvas{display:block;width:100%;height:auto}
         .gauge-big{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;letter-spacing:.02em}
         .gauge-unit{font-size:10px;color:#4466aa;display:block;margin-top:2px;letter-spacing:.08em}
         .cards-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.5rem;animation:fadeUp .8s .15s ease both;opacity:0;animation-fill-mode:forwards}
@@ -74,21 +74,13 @@
       <div class="gauge-card">
         <div class="gauge-title">velocidade</div>
         <div class="gauge-canvas-wrap">
-          <canvas id="gVel" width="200" height="120"></canvas>
-          <div class="gauge-number">
-            <span class="gauge-big" id="gVelNum" style="color:#00aaff">0.0</span>
-            <span class="gauge-unit">km/h</span>
-          </div>
+          <canvas id="gVel"></canvas>
         </div>
       </div>
       <div class="gauge-card">
         <div class="gauge-title">rotação</div>
         <div class="gauge-canvas-wrap">
-          <canvas id="gRpm" width="200" height="120"></canvas>
-          <div class="gauge-number">
-            <span class="gauge-big" id="gRpmNum" style="color:#00ddaa">0</span>
-            <span class="gauge-unit">rpm</span>
-          </div>
+          <canvas id="gRpm"></canvas>
         </div>
       </div>
     </div>
@@ -180,46 +172,125 @@ initParticles();
 animParticles();
 
 // Renderização dos Gauges Dinâmicos
-function drawGauge(id, value, max, color1, color2) {
+function drawGauge(id, value, max, color1, color2, unit, label) {
   const c = document.getElementById(id);
-  const ctx = c.getContext('2d');
-  const w = c.width, h = c.height;
-  ctx.clearRect(0, 0, w, h);
-  const cx = w / 2, cy = h - 6;
-  const R = Math.min(w / 2, h) * 0.82;
+  const wrap = c.parentElement;
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = wrap.clientWidth || 220;
+  const cssH = Math.round(cssW * 0.62);
 
+  c.width = cssW * dpr;
+  c.height = cssH * dpr;
+  c.style.width = cssW + 'px';
+  c.style.height = cssH + 'px';
+
+  const ctx = c.getContext('2d');
+  ctx.save();
+  ctx.scale(dpr, dpr);
+
+  const w = cssW, h = cssH;
+  const cx = w / 2;
+  // Centro do semicírculo: 72% da altura, deixa espaço para marcações e texto
+  const cy = h * 0.72;
+  const R = Math.min(cx * 0.82, cy * 0.88);
+  const startA = Math.PI;
+  const endA = 2 * Math.PI;
+  const ratio = Math.min(Math.max(value / max, 0), 1);
+
+  // Trilho de fundo
   ctx.beginPath();
-  ctx.arc(cx, cy, R, Math.PI, 2 * Math.PI);
+  ctx.arc(cx, cy, R, startA, endA);
   ctx.strokeStyle = '#1a2640';
-  ctx.lineWidth = 12;
+  ctx.lineWidth = 13;
+  ctx.lineCap = 'round';
   ctx.stroke();
 
-  const ratio = Math.min(value / max, 1);
-  if (ratio > 0) {
+  // Arco de valor
+  if (ratio > 0.005) {
+    const arcEnd = startA + ratio * Math.PI;
     const grd = ctx.createLinearGradient(cx - R, cy, cx + R, cy);
-    grd.addColorStop(0, color1);
+    grd.addColorStop(0, color1 + 'bb');
+    grd.addColorStop(0.6, color1);
     grd.addColorStop(1, color2);
     ctx.beginPath();
-    ctx.arc(cx, cy, R, Math.PI, Math.PI + ratio * Math.PI);
+    ctx.arc(cx, cy, R, startA, arcEnd);
     ctx.strokeStyle = grd;
-    ctx.lineWidth = 12;
+    ctx.lineWidth = 13;
     ctx.lineCap = 'round';
     ctx.stroke();
   }
 
-  const needleA = Math.PI + ratio * Math.PI;
+  // Marcações (ticks)
+  const tickCount = 11;
+  for (let i = 0; i <= tickCount; i++) {
+    const a = Math.PI + (i / tickCount) * Math.PI;
+    const isMajor = i % 2 === 0;
+    const inner = R - (isMajor ? 22 : 16);
+    const outer = R - 7;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+    ctx.lineTo(cx + Math.cos(a) * outer, cy + Math.sin(a) * outer);
+    ctx.strokeStyle = isMajor ? '#2a3a5a' : '#1e2e48';
+    ctx.lineWidth = isMajor ? 1.5 : 1;
+    ctx.stroke();
+  }
+
+  // Agulha
+  const needleA = -Math.PI / 2 + ratio * Math.PI;
+  const nLen = R - 18;
+  const nBase = 5;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(needleA);
   ctx.beginPath();
-  ctx.moveTo(-2, 4);
-  ctx.lineTo(0, -(R - 20));
-  ctx.lineTo(2, 4);
+  ctx.moveTo(-nBase * 0.4, nBase);
+  ctx.lineTo(0, -nLen);
+  ctx.lineTo(nBase * 0.4, nBase);
   ctx.closePath();
   ctx.fillStyle = color1;
+  ctx.shadowColor = color1;
+  ctx.shadowBlur = 8;
   ctx.fill();
   ctx.restore();
+
+  // Hub central
+  ctx.beginPath();
+  ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a2640';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = color1;
+  ctx.fill();
+
+  // Valor principal
+  const displayVal = unit === 'km/h' ? value.toFixed(1) : Math.round(value).toString();
+  const numSize = Math.max(18, Math.round(w * 0.11));
+  const unitSize = Math.max(10, Math.round(w * 0.062));
+  const numY = cy - R * 0.18;
+  ctx.font = `700 ${numSize}px Orbitron, monospace`;
+  ctx.fillStyle = color1;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(displayVal, cx, numY);
+
+  // Unidade
+  ctx.font = `400 ${unitSize}px Inter, sans-serif`;
+  ctx.fillStyle = '#4466aa';
+  ctx.fillText(unit, cx, numY + numSize * 0.85);
+
+  ctx.restore();
 }
+
+// Cache dos valores atuais para redesenho no resize
+let _vel = 0, _rpm = 0;
+
+function redrawAll() {
+  drawGauge('gVel', _vel, 120, '#00aaff', '#0055ff', 'km/h');
+  drawGauge('gRpm', _rpm, 3000, '#00ddaa', '#00aa66', 'rpm');
+}
+
+window.addEventListener('resize', redrawAll);
 
 // Inicialização do Gráfico Histórico
 const histData = {
@@ -253,8 +324,6 @@ function buscarDadosTelemetria() {
       const agora = new Date().toLocaleTimeString('pt-BR');
 
       // Atualiza os valores textuais na interface
-      document.getElementById('gVelNum').textContent = dVel.toFixed(1);
-      document.getElementById('gRpmNum').textContent = dRpm;
       document.getElementById('sVel').textContent = dVel.toFixed(1);
       document.getElementById('sRpm').textContent = dRpm;
       document.getElementById('sTime').textContent = agora;
@@ -264,8 +333,9 @@ function buscarDadosTelemetria() {
       document.getElementById('bRpm').style.width = Math.min(dRpm / 3000 * 100, 100).toFixed(1) + '%';
 
       // Redesenha os ponteiros visuais (Gauges)
-      drawGauge('gVel', dVel, 120, '#00aaff', '#0055ff');
-      drawGauge('gRpm', dRpm, 3000, '#00ddaa', '#00aa66');
+      _vel = dVel; _rpm = dRpm;
+      drawGauge('gVel', dVel, 120, '#00aaff', '#0055ff', 'km/h');
+      drawGauge('gRpm', dRpm, 3000, '#00ddaa', '#00aa66', 'rpm');
 
       // Adiciona novos dados ao gráfico em tempo real
       histData.labels.push(agora);
@@ -282,8 +352,7 @@ function buscarDadosTelemetria() {
 }
 
 // Inicia os desenhos estáticos e define o loop de consulta da API a cada 800ms
-drawGauge('gVel', 0, 120, '#00aaff', '#0055ff');
-drawGauge('gRpm', 0, 3000, '#00ddaa', '#00aa66');
+redrawAll();
 setInterval(buscarDadosTelemetria, 800);
 </script>
 </body>
