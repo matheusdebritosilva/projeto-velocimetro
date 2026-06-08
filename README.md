@@ -5,7 +5,7 @@ Projeto Velocímetro Digital IoT com ESP32
 * Henrique Gabriel
 * Gustavo Pimentel
 * Arthur Villa
-* Victor
+* Vitor Gabriel
 
  Como Rodar o Projeto
 1. Importe o arquivo `velocimetro.ino` na IDE do Arduino e grave na ESP32.
