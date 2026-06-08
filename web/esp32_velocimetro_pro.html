@@ -1,0 +1,374 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Orbitron:wght@400;500;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+.wrap{background:#0a0e1a;min-height:600px;font-family:'Inter',sans-serif;overflow:hidden;position:relative}
+.particles{position:absolute;inset:0;pointer-events:none}
+.hero{position:relative;z-index:2;padding:2rem 1.5rem 1rem}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;animation:fadeDown .6s ease both}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#00d4ff22,#0066ff22);border:1px solid #0066ff55;display:flex;align-items:center;justify-content:center}
+.brand-name{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:500;color:#e0eaff;letter-spacing:.12em}
+.brand-sub{font-size:10px;color:#5577aa;margin-top:1px}
+.status-pills{display:flex;gap:8px}
+.pill{font-size:10px;padding:4px 10px;border-radius:20px;font-weight:500;display:flex;align-items:center;gap:5px}
+.pill-live{background:#00ff8811;border:1px solid #00ff8844;color:#00cc66}
+.pill-wifi{background:#0066ff11;border:1px solid #0066ff44;color:#4499ff}
+.blink{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.gauges-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.5rem}
+.gauge-card{background:#0d1220;border:1px solid #1a2640;border-radius:16px;padding:1.25rem;text-align:center;position:relative;overflow:hidden;animation:fadeUp .7s ease both}
+.gauge-card:nth-child(2){animation-delay:.1s}
+.gauge-card::before{content:'';position:absolute;inset:0;border-radius:16px;background:radial-gradient(ellipse at 50% 0%,#0033ff08,transparent 60%);pointer-events:none}
+.gauge-title{font-size:10px;color:#4466aa;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;font-weight:500}
+.gauge-canvas-wrap{position:relative;display:inline-block}
+.gauge-number{position:absolute;bottom:8px;left:0;right:0;text-align:center}
+.gauge-big{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;letter-spacing:.02em}
+.gauge-unit{font-size:10px;color:#4466aa;display:block;margin-top:2px;letter-spacing:.08em}
+.cards-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.5rem;animation:fadeUp .8s .15s ease both;opacity:0;animation-fill-mode:forwards}
+.stat-card{background:#0d1220;border:1px solid #1a2640;border-radius:12px;padding:.9rem 1rem}
+.stat-label{font-size:10px;color:#3355aa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.stat-val{font-family:'Orbitron',sans-serif;font-size:18px;color:#e0eaff;font-weight:500}
+.stat-unit{font-size:10px;color:#4466aa;margin-left:3px}
+.stat-bar{margin-top:8px;height:3px;background:#1a2640;border-radius:2px;overflow:hidden}
+.stat-fill{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.chart-card{background:#0d1220;border:1px solid #1a2640;border-radius:16px;padding:1.25rem;margin-bottom:1.5rem;animation:fadeUp .9s .2s ease both;opacity:0;animation-fill-mode:forwards}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.chart-title{font-size:11px;color:#4466aa;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
+.chart-legend{display:flex;gap:12px}
+.leg{display:flex;align-items:center;gap:5px;font-size:10px;color:#4466aa}
+.leg-dot{width:8px;height:8px;border-radius:2px}
+.sim-card{background:#0d1220;border:1px solid #1a2640;border-radius:16px;padding:1.25rem;animation:fadeUp 1s .25s ease both;opacity:0;animation-fill-mode:forwards}
+.sim-header{font-size:10px;color:#4466aa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem;font-weight:500}
+.sim-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.sim-label{font-size:12px;color:#7799cc;min-width:90px}
+.sim-val{font-family:'Orbitron',sans-serif;font-size:13px;color:#e0eaff;min-width:64px;text-align:right}
+.sim-row input[type=range]{flex:1;-webkit-appearance:none;height:4px;border-radius:2px;background:#1a2640;outline:none;cursor:pointer}
+.sim-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#0066ff;border:2px solid #0044cc;cursor:pointer;transition:transform .15s}
+.sim-row input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.bottom-strip{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.bs-pill{font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid #1a2640;color:#4466aa;background:#0a0e1a}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+</style>
+
+<div class="wrap">
+  <canvas class="particles" id="pCanvas"></canvas>
+  <div class="hero">
+    <h2 class="sr-only">Painel de telemetria ESP32 com velocímetro, RPM e histórico em tempo real</h2>
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-icon"><i class="ti ti-cpu" style="font-size:16px;color:#4499ff" aria-hidden="true"></i></div>
+        <div>
+          <div class="brand-name">ESP32 Telemetry</div>
+          <div class="brand-sub">velocímetro digital iot</div>
+        </div>
+      </div>
+      <div class="status-pills">
+        <div class="pill pill-live"><span class="blink"></span>ao vivo</div>
+        <div class="pill pill-wifi"><i class="ti ti-wifi" style="font-size:12px" aria-hidden="true"></i>wi-fi</div>
+      </div>
+    </div>
+
+    <div class="gauges-row">
+      <div class="gauge-card">
+        <div class="gauge-title">velocidade</div>
+        <div class="gauge-canvas-wrap">
+          <canvas id="gVel" width="200" height="120"></canvas>
+          <div class="gauge-number">
+            <span class="gauge-big" id="gVelNum" style="color:#00aaff">0</span>
+            <span class="gauge-unit">km/h</span>
+          </div>
+        </div>
+      </div>
+      <div class="gauge-card">
+        <div class="gauge-title">rotação</div>
+        <div class="gauge-canvas-wrap">
+          <canvas id="gRpm" width="200" height="120"></canvas>
+          <div class="gauge-number">
+            <span class="gauge-big" id="gRpmNum" style="color:#00ddaa">0</span>
+            <span class="gauge-unit">rpm</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards-row">
+      <div class="stat-card">
+        <div class="stat-label">velocidade</div>
+        <div class="stat-val"><span id="sVel">0</span><span class="stat-unit">km/h</span></div>
+        <div class="stat-bar"><div class="stat-fill" id="bVel" style="background:#00aaff;width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">rpm</div>
+        <div class="stat-val"><span id="sRpm">0</span><span class="stat-unit">rpm</span></div>
+        <div class="stat-bar"><div class="stat-fill" id="bRpm" style="background:#00ddaa;width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">atualização</div>
+        <div class="stat-val" id="sTime" style="font-size:13px;font-family:monospace;color:#99bbdd">--:--:--</div>
+        <div class="stat-bar"><div class="stat-fill" id="bPing" style="background:#7766ff;width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">histórico — últimos 40s</span>
+        <div class="chart-legend">
+          <div class="leg"><span class="leg-dot" style="background:#00aaff"></span>velocidade</div>
+          <div class="leg"><span class="leg-dot" style="background:#00ddaa"></span>rpm ÷ 30</div>
+        </div>
+      </div>
+      <div style="position:relative;height:130px">
+        <canvas id="histChart" role="img" aria-label="Gráfico de histórico de velocidade e rpm">Histórico de telemetria.</canvas>
+      </div>
+    </div>
+
+    <div class="sim-card">
+      <div class="sim-header"><i class="ti ti-adjustments" style="font-size:12px;margin-right:6px" aria-hidden="true"></i>simulador de velocidade</div>
+      <div class="sim-row">
+        <span class="sim-label">velocidade</span>
+        <input type="range" id="slVel" min="0" max="120" step="1" value="0">
+        <span class="sim-val"><span id="slVelOut">0</span> km/h</span>
+      </div>
+      <div class="bottom-strip">
+        <span class="bs-pill"><i class="ti ti-database" style="font-size:11px;margin-right:4px" aria-hidden="true"></i>mysql ok</span>
+        <span class="bs-pill"><i class="ti ti-server" style="font-size:11px;margin-right:4px" aria-hidden="true"></i>apache ok</span>
+        <span class="bs-pill"><i class="ti ti-code" style="font-size:11px;margin-right:4px" aria-hidden="true"></i>php 8.x</span>
+        <span class="bs-pill"><i class="ti ti-brand-github" style="font-size:11px;margin-right:4px" aria-hidden="true"></i>esp32 v4</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const pCanvas = document.getElementById('pCanvas');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+
+function resizeParticles() {
+  const wrap = pCanvas.parentElement;
+  pCanvas.width = wrap.offsetWidth;
+  pCanvas.height = wrap.offsetHeight;
+}
+
+function initParticles() {
+  resizeParticles();
+  particles = [];
+  for (let i = 0; i < 55; i++) {
+    particles.push({
+      x: Math.random() * pCanvas.width,
+      y: Math.random() * pCanvas.height,
+      r: Math.random() * 1.2 + 0.3,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      o: Math.random() * 0.5 + 0.1
+    });
+  }
+}
+
+function animParticles() {
+  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = pCanvas.width;
+    if (p.x > pCanvas.width) p.x = 0;
+    if (p.y < 0) p.y = pCanvas.height;
+    if (p.y > pCanvas.height) p.y = 0;
+    pCtx.beginPath();
+    pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    pCtx.fillStyle = `rgba(0,130,255,${p.o})`;
+    pCtx.fill();
+  });
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 80) {
+        pCtx.beginPath();
+        pCtx.moveTo(particles[i].x, particles[i].y);
+        pCtx.lineTo(particles[j].x, particles[j].y);
+        pCtx.strokeStyle = `rgba(0,100,255,${0.12 * (1 - d / 80)})`;
+        pCtx.lineWidth = 0.5;
+        pCtx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(animParticles);
+}
+
+initParticles();
+animParticles();
+
+function drawGauge(id, value, max, color1, color2) {
+  const c = document.getElementById(id);
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  ctx.clearRect(0, 0, w, h);
+  const cx = w / 2, cy = h - 6;
+  const R = Math.min(w / 2, h) * 0.82;
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, Math.PI, 2 * Math.PI);
+  ctx.strokeStyle = '#1a2640';
+  ctx.lineWidth = 12;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, Math.PI, Math.PI + Math.PI * 0.33);
+  ctx.strokeStyle = '#1e3355';
+  ctx.lineWidth = 12;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, Math.PI + Math.PI * 0.33, Math.PI + Math.PI * 0.66);
+  ctx.strokeStyle = '#1a2e44';
+  ctx.lineWidth = 12;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, Math.PI + Math.PI * 0.66, 2 * Math.PI);
+  ctx.strokeStyle = '#2a1a2e';
+  ctx.lineWidth = 12;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  const ratio = Math.min(value / max, 1);
+  if (ratio > 0) {
+    const grd = ctx.createLinearGradient(cx - R, cy, cx + R, cy);
+    grd.addColorStop(0, color1);
+    grd.addColorStop(1, color2);
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, Math.PI, Math.PI + ratio * Math.PI);
+    ctx.strokeStyle = grd;
+    ctx.lineWidth = 12;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  for (let i = 0; i <= 10; i++) {
+    const a = Math.PI + (i / 10) * Math.PI;
+    const isMain = i % 2 === 0;
+    const r1 = R - 16, r2 = R - (isMain ? 10 : 12);
+    ctx.beginPath();
+    ctx.moveTo(cx + r1 * Math.cos(a), cy + r1 * Math.sin(a));
+    ctx.lineTo(cx + r2 * Math.cos(a), cy + r2 * Math.sin(a));
+    ctx.strokeStyle = isMain ? '#334466' : '#223355';
+    ctx.lineWidth = isMain ? 1.5 : 1;
+    ctx.stroke();
+    if (isMain) {
+      const lv = Math.round((i / 10) * max);
+      const lx = cx + (R - 26) * Math.cos(a);
+      const ly = cy + (R - 26) * Math.sin(a);
+      ctx.fillStyle = '#334466';
+      ctx.font = '8px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(lv, lx, ly + 3);
+    }
+  }
+
+  const needleA = Math.PI + ratio * Math.PI;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(needleA);
+  ctx.beginPath();
+  ctx.moveTo(-2, 4);
+  ctx.lineTo(0, -(R - 20));
+  ctx.lineTo(2, 4);
+  ctx.closePath();
+  ctx.fillStyle = ratio > 0.75 ? '#ff4444' : ratio > 0.5 ? '#ffaa00' : color1;
+  ctx.fill();
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+  ctx.fillStyle = '#0d1220';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.fillStyle = color1;
+  ctx.fill();
+}
+
+const histData = {
+  labels: [],
+  datasets: [
+    {
+      label: 'Velocidade', data: [],
+      borderColor: '#00aaff', backgroundColor: 'rgba(0,170,255,0.08)',
+      tension: 0.4, pointRadius: 0, fill: true, borderWidth: 2,
+      borderDash: []
+    },
+    {
+      label: 'RPM÷30', data: [],
+      borderColor: '#00ddaa', backgroundColor: 'rgba(0,221,170,0.06)',
+      tension: 0.4, pointRadius: 0, fill: true, borderWidth: 2,
+      borderDash: [4, 3]
+    }
+  ]
+};
+
+const histChart = new Chart(document.getElementById('histChart'), {
+  type: 'line',
+  data: histData,
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    animation: { duration: 400 },
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#3355aa', font: { size: 9 }, maxTicksLimit: 6 }, grid: { color: '#111d30' }, border: { color: '#1a2640' } },
+      y: { min: 0, max: 130, ticks: { color: '#3355aa', font: { size: 9 }, stepSize: 30 }, grid: { color: '#111d30' }, border: { color: '#1a2640' } }
+    }
+  }
+});
+
+let simVel = 0;
+let animVel = 0, animRpm = 0;
+
+document.getElementById('slVel').addEventListener('input', function () {
+  simVel = parseInt(this.value);
+  document.getElementById('slVelOut').textContent = simVel;
+});
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function update() {
+  const noise = (Math.random() - 0.5) * 1.5;
+  const targetVel = Math.max(0, simVel + noise);
+  const targetRpm = targetVel > 0 ? (targetVel / 0.001884) : 0;
+
+  animVel = lerp(animVel, targetVel, 0.18);
+  animRpm = lerp(animRpm, targetRpm, 0.18);
+
+  const dVel = Math.round(animVel * 10) / 10;
+  const dRpm = Math.round(animRpm);
+
+  document.getElementById('gVelNum').textContent = dVel.toFixed(1);
+  document.getElementById('gRpmNum').textContent = dRpm;
+  document.getElementById('sVel').textContent = dVel.toFixed(1);
+  document.getElementById('sRpm').textContent = dRpm;
+  document.getElementById('sTime').textContent = new Date().toLocaleTimeString('pt-BR');
+  document.getElementById('bVel').style.width = Math.min(animVel / 120 * 100, 100).toFixed(1) + '%';
+  document.getElementById('bRpm').style.width = Math.min(animRpm / 3000 * 100, 100).toFixed(1) + '%';
+
+  drawGauge('gVel', animVel, 120, '#00aaff', '#0055ff');
+  drawGauge('gRpm', animRpm, 3000, '#00ddaa', '#00aa66');
+
+  const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  histData.labels.push(now);
+  histData.datasets[0].data.push(Math.round(animVel * 10) / 10);
+  histData.datasets[1].data.push(Math.round(animRpm / 30));
+  if (histData.labels.length > 40) { histData.labels.shift(); histData.datasets.forEach(d => d.data.shift()); }
+  histChart.update();
+}
+
+drawGauge('gVel', 0, 120, '#00aaff', '#0055ff');
+drawGauge('gRpm', 0, 3000, '#00ddaa', '#00aa66');
+setInterval(update, 800);
+</script>
