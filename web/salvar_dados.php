@@ -2,7 +2,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "velocimetro_db";
+$dbname = "velocimetro";
 
 // Cria a conexão
 $conn = new mysqli($servername, $username, $password, $dbname);
