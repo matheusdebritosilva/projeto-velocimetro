@@ -1,15 +1,31 @@
+
 <?php
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "velocimetro";
+/*
+$servername= "localhost";
+$username= "root";
+$password= "";
+$dbname= "velocimetro";
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+$conn= mysqli_connect($servername, $username,  $password, $dbname);
 
-if ($conn->connect_error) {
-    http_response_code(500);
-    die("Erro de conexao: " . $conn->connect_error);
+if(!$conn){
+    die("error" . mysqli_connect_error());
+} else {
 }
 
-$conn->set_charset("utf8mb4");
+$KM= $_POST['velocidade'] ?? '';
+$RPM= $_POST['rpm'] ?? '';
+
+
+
+$sql= "INSERT into dados (KM, RPM) values ('$KM', '$RPM')";
+
+if($conn->query($sql) === TRUE){
+    echo "New Record created successfuly";
+} else {
+    echo "Error" . $sql . "<br>" . $conn->error;
+}
+
+$conn->close();
+*/
 ?>
