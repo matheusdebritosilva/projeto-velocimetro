@@ -2,32 +2,358 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Monitor ESP32</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Telemetry - Velocímetro Digital Pro</title>
     <style>
-        body { background: #111; color: #00ff00; font-family: Arial, sans-serif; text-align: center; margin-top: 100px; }
-        .valor { font-size: 50px; margin: 20px; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Orbitron:wght@400;500;700&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        body { background: #0a0e1a; color: #e0eaff; font-family: 'Inter', sans-serif; }
+        .wrap{background:#0a0e1a;min-height:100vh;overflow:hidden;position:relative}
+        .particles{position:absolute;inset:0;pointer-events:none}
+        .hero{position:relative;z-index:2;padding:2rem 1.5rem 1rem; max-width: 800px; margin: 0 auto;}
+        .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;animation:fadeDown .6s ease both}
+        .brand{display:flex;align-items:center;gap:10px}
+        .brand-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#00d4ff22,#0066ff22);border:1px solid #0066ff55;display:flex;align-items:center;justify-content:center}
+        .brand-name{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:500;color:#e0eaff;letter-spacing:.12em}
+        .brand-sub{font-size:10px;color:#5577aa;margin-top:1px}
+        .status-pills{display:flex;gap:8px}
+        .pill{font-size:10px;padding:4px 10px;border-radius:20px;font-weight:500;display:flex;align-items:center;gap:5px}
+        .pill-live{background:#00ff8811;border:1px solid #00ff8844;color:#00cc66}
+        .pill-wifi{background:#0066ff11;border:1px solid #0066ff44;color:#4499ff}
+        .blink{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1s infinite}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+        .gauges-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.5rem}
+        .gauge-card{background:#0d1220;border:1px solid #1a2640;border-radius:16px;padding:1.25rem;text-align:center;position:relative;overflow:hidden;animation:fadeUp .7s ease both}
+        .gauge-card:nth-child(2){animation-delay:.1s}
+        .gauge-card::before{content:'';position:absolute;inset:0;border-radius:16px;background:radial-gradient(ellipse at 50% 0%,#0033ff08,transparent 60%);pointer-events:none}
+        .gauge-title{font-size:10px;color:#4466aa;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;font-weight:500}
+        .gauge-canvas-wrap{position:relative;display:block;width:100%}
+        .gauge-canvas-wrap canvas{display:block;width:100%;height:auto}
+        .gauge-big{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;letter-spacing:.02em}
+        .gauge-unit{font-size:10px;color:#4466aa;display:block;margin-top:2px;letter-spacing:.08em}
+        .cards-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.5rem;animation:fadeUp .8s .15s ease both;opacity:0;animation-fill-mode:forwards}
+        .stat-card{background:#0d1220;border:1px solid #1a2640;border-radius:12px;padding:.9rem 1rem}
+        .stat-label{font-size:10px;color:#3355aa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+        .stat-val{font-family:'Orbitron',sans-serif;font-size:18px;color:#e0eaff;font-weight:500}
+        .stat-unit{font-size:10px;color:#4466aa;margin-left:3px}
+        .stat-bar{margin-top:8px;height:3px;background:#1a2640;border-radius:2px;overflow:hidden}
+        .stat-fill{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+        .chart-card{background:#0d1220;border:1px solid #1a2640;border-radius:16px;padding:1.25rem;margin-bottom:1.5rem;animation:fadeUp .9s .2s ease both;opacity:0;animation-fill-mode:forwards}
+        .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+        .chart-title{font-size:11px;color:#4466aa;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
+        .chart-legend{display:flex;gap:12px}
+        .leg{display:flex;align-items:center;gap:5px;font-size:10px;color:#4466aa}
+        .leg-dot{width:8px;height:8px;border-radius:2px}
+        .bottom-strip{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+        .bs-pill{font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid #1a2640;color:#4466aa;background:#0a0e1a}
+        @keyframes fadeDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
     </style>
 </head>
 <body>
-    <h1>Dados da ESP32</h1>
-    <div class="valor">Velocidade: <span id="velocidade">0</span> km/h</div>
-    <div class="valor">RPM: <span id="rpm">0</span></div>
 
-    <script>
-        function atualizarDados() {
-            // CORRIGIDO: Apontando para o arquivo PHP correto que criamos
-            fetch('buscar_ultimo.php')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('velocidade').innerText = data.velocidade;
-                document.getElementById('rpm').innerText = data.rpm;
-            })
-            .catch(error => console.error("Erro ao buscar dados:", error));
-        }
+<div class="wrap">
+  <canvas class="particles" id="pCanvas"></canvas>
+  <div class="hero">
+    
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-icon"><b style="font-size:16px;color:#4499ff">📊</b></div>
+        <div>
+          <div class="brand-name">ESP32 Telemetry Pro</div>
+          <div class="brand-sub">velocímetro digital iot</div>
+        </div>
+      </div>
+      <div class="status-pills">
+        <div class="pill pill-live"><span class="blink"></span>ao vivo</div>
+        <div class="pill pill-wifi">📶 wi-fi</div>
+      </div>
+    </div>
 
-        // Executa imediatamente ao carregar e depois a cada 1 segundo (conforme regra)
-        atualizarDados();
-        setInterval(atualizarDados, 1000);
-    </script>
+    <div class="gauges-row">
+      <div class="gauge-card">
+        <div class="gauge-title">velocidade</div>
+        <div class="gauge-canvas-wrap">
+          <canvas id="gVel"></canvas>
+        </div>
+      </div>
+      <div class="gauge-card">
+        <div class="gauge-title">rotação</div>
+        <div class="gauge-canvas-wrap">
+          <canvas id="gRpm"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards-row">
+      <div class="stat-card">
+        <div class="stat-label">velocidade</div>
+        <div class="stat-val"><span id="sVel">0.0</span><span class="stat-unit">km/h</span></div>
+        <div class="stat-bar"><div class="stat-fill" id="bVel" style="background:#00aaff;width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">rpm</div>
+        <div class="stat-val"><span id="sRpm">0</span><span class="stat-unit">rpm</span></div>
+        <div class="stat-bar"><div class="stat-fill" id="bRpm" style="background:#00ddaa;width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">atualização</div>
+        <div class="stat-val" id="sTime" style="font-size:13px;font-family:monospace;color:#99bbdd">--:--:--</div>
+        <div class="stat-bar"><div class="stat-fill" id="bPing" style="background:#7766ff;width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">histórico — últimos 40s</span>
+        <div class="chart-legend">
+          <div class="leg"><span class="leg-dot" style="background:#00aaff"></span>velocidade</div>
+          <div class="leg"><span class="leg-dot" style="background:#00ddaa"></span>rpm ÷ 30</div>
+        </div>
+      </div>
+      <div style="position:relative;height:130px">
+        <canvas id="histChart"></canvas>
+      </div>
+      <div class="bottom-strip">
+        <span class="bs-pill">📁 mysql ok</span>
+        <span class="bs-pill">🖥️ apache ok</span>
+        <span class="bs-pill">🌐 php 8.x API</span>
+        <span class="bs-pill">⚙️ esp32 live</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// Configuração de Partículas de Fundo
+const pCanvas = document.getElementById('pCanvas');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+
+function resizeParticles() {
+  const wrap = pCanvas.parentElement;
+  pCanvas.width = wrap.offsetWidth;
+  pCanvas.height = wrap.offsetHeight;
+}
+
+function initParticles() {
+  resizeParticles();
+  particles = [];
+  for (let i = 0; i < 55; i++) {
+    particles.push({
+      x: Math.random() * pCanvas.width,
+      y: Math.random() * pCanvas.height,
+      r: Math.random() * 1.2 + 0.3,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      o: Math.random() * 0.5 + 0.1
+    });
+  }
+}
+
+function animParticles() {
+  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = pCanvas.width;
+    if (p.x > pCanvas.width) p.x = 0;
+    if (p.y < 0) p.y = pCanvas.height;
+    if (p.y > pCanvas.height) p.y = 0;
+    pCtx.beginPath();
+    pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    pCtx.fillStyle = `rgba(0,130,255,${p.o})`;
+    pCtx.fill();
+  });
+  requestAnimationFrame(animParticles);
+}
+initParticles();
+animParticles();
+
+// Renderização dos Gauges Dinâmicos
+function drawGauge(id, value, max, color1, color2, unit, label) {
+  const c = document.getElementById(id);
+  const wrap = c.parentElement;
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = wrap.clientWidth || 220;
+  const cssH = Math.round(cssW * 0.62);
+
+  c.width = cssW * dpr;
+  c.height = cssH * dpr;
+  c.style.width = cssW + 'px';
+  c.style.height = cssH + 'px';
+
+  const ctx = c.getContext('2d');
+  ctx.save();
+  ctx.scale(dpr, dpr);
+
+  const w = cssW, h = cssH;
+  const cx = w / 2;
+  // Centro do semicírculo: 72% da altura, deixa espaço para marcações e texto
+  const cy = h * 0.72;
+  const R = Math.min(cx * 0.82, cy * 0.88);
+  const startA = Math.PI;
+  const endA = 2 * Math.PI;
+  const ratio = Math.min(Math.max(value / max, 0), 1);
+
+  // Trilho de fundo
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, startA, endA);
+  ctx.strokeStyle = '#1a2640';
+  ctx.lineWidth = 13;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Arco de valor
+  if (ratio > 0.005) {
+    const arcEnd = startA + ratio * Math.PI;
+    const grd = ctx.createLinearGradient(cx - R, cy, cx + R, cy);
+    grd.addColorStop(0, color1 + 'bb');
+    grd.addColorStop(0.6, color1);
+    grd.addColorStop(1, color2);
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, startA, arcEnd);
+    ctx.strokeStyle = grd;
+    ctx.lineWidth = 13;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  // Marcações (ticks)
+  const tickCount = 11;
+  for (let i = 0; i <= tickCount; i++) {
+    const a = Math.PI + (i / tickCount) * Math.PI;
+    const isMajor = i % 2 === 0;
+    const inner = R - (isMajor ? 22 : 16);
+    const outer = R - 7;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+    ctx.lineTo(cx + Math.cos(a) * outer, cy + Math.sin(a) * outer);
+    ctx.strokeStyle = isMajor ? '#2a3a5a' : '#1e2e48';
+    ctx.lineWidth = isMajor ? 1.5 : 1;
+    ctx.stroke();
+  }
+
+  // Agulha
+  const needleA = -Math.PI / 2 + ratio * Math.PI;
+  const nLen = R - 18;
+  const nBase = 5;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(needleA);
+  ctx.beginPath();
+  ctx.moveTo(-nBase * 0.4, nBase);
+  ctx.lineTo(0, -nLen);
+  ctx.lineTo(nBase * 0.4, nBase);
+  ctx.closePath();
+  ctx.fillStyle = color1;
+  ctx.shadowColor = color1;
+  ctx.shadowBlur = 8;
+  ctx.fill();
+  ctx.restore();
+
+  // Hub central
+  ctx.beginPath();
+  ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a2640';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = color1;
+  ctx.fill();
+
+  // Valor principal
+  const displayVal = unit === 'km/h' ? value.toFixed(1) : Math.round(value).toString();
+  const numSize = Math.max(18, Math.round(w * 0.11));
+  const unitSize = Math.max(10, Math.round(w * 0.062));
+  const numY = cy - R * 0.18;
+  ctx.font = `700 ${numSize}px Orbitron, monospace`;
+  ctx.fillStyle = color1;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(displayVal, cx, numY);
+
+  // Unidade
+  ctx.font = `400 ${unitSize}px Inter, sans-serif`;
+  ctx.fillStyle = '#4466aa';
+  ctx.fillText(unit, cx, numY + numSize * 0.85);
+
+  ctx.restore();
+}
+
+// Cache dos valores atuais para redesenho no resize
+let _vel = 0, _rpm = 0;
+
+function redrawAll() {
+  drawGauge('gVel', _vel, 120, '#00aaff', '#0055ff', 'km/h');
+  drawGauge('gRpm', _rpm, 3000, '#00ddaa', '#00aa66', 'rpm');
+}
+
+window.addEventListener('resize', redrawAll);
+
+// Inicialização do Gráfico Histórico
+const histData = {
+  labels: [],
+  datasets: [
+    { label: 'Velocidade', data: [], borderColor: '#00aaff', backgroundColor: 'rgba(0,170,255,0.08)', tension: 0.4, pointRadius: 0, fill: true, borderWidth: 2 },
+    { label: 'RPM÷30', data: [], borderColor: '#00ddaa', backgroundColor: 'rgba(0,221,170,0.06)', tension: 0.4, pointRadius: 0, fill: true, borderWidth: 2, borderDash: [4, 3] }
+  ]
+};
+
+const histChart = new Chart(document.getElementById('histChart'), {
+  type: 'line',
+  data: histData,
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#3355aa', font: { size: 9 }, maxTicksLimit: 6 }, grid: { color: '#111d30' } },
+      y: { min: 0, max: 130, ticks: { color: '#3355aa', font: { size: 9 } }, grid: { color: '#111d30' } }
+    }
+  }
+});
+
+// INTEGRAÇÃO REAL COM O BANCO DE DADOS (Substitui o simulador falso)
+function buscarDadosTelemetria() {
+  fetch('./buscar_ultimo.php')
+    .then(response => response.json())
+    .then(data => {
+      const dVel = parseFloat(data.velocidade || 0);
+      const dRpm = parseInt(data.rpm || 0);
+      const agora = new Date().toLocaleTimeString('pt-BR');
+
+      // Atualiza os valores textuais na interface
+      document.getElementById('sVel').textContent = dVel.toFixed(1);
+      document.getElementById('sRpm').textContent = dRpm;
+      document.getElementById('sTime').textContent = agora;
+
+      // Atualiza as barras de progresso
+      document.getElementById('bVel').style.width = Math.min(dVel / 120 * 100, 100).toFixed(1) + '%';
+      document.getElementById('bRpm').style.width = Math.min(dRpm / 3000 * 100, 100).toFixed(1) + '%';
+
+      // Redesenha os ponteiros visuais (Gauges)
+      _vel = dVel; _rpm = dRpm;
+      drawGauge('gVel', dVel, 120, '#00aaff', '#0055ff', 'km/h');
+      drawGauge('gRpm', dRpm, 3000, '#00ddaa', '#00aa66', 'rpm');
+
+      // Adiciona novos dados ao gráfico em tempo real
+      histData.labels.push(agora);
+      histData.datasets[0].data.push(dVel);
+      histData.datasets[1].data.push(Math.round(dRpm / 30));
+
+      if (histData.labels.length > 30) {
+        histData.labels.shift();
+        histData.datasets.forEach(d => d.data.shift());
+      }
+      histChart.update();
+    })
+    .catch(error => console.error("Erro na requisição de telemetria:", error));
+}
+
+// Inicia os desenhos estáticos e define o loop de consulta da API a cada 800ms
+redrawAll();
+setInterval(buscarDadosTelemetria, 800);
+</script>
 </body>
 </html>

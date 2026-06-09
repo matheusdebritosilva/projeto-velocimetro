@@ -1,34 +1,35 @@
 <?php
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "velocimetro";
+header("Content-Type: text/plain; charset=utf-8");
 
-// Cria a conexão
-$conn = new mysqli($servername, $username, $password, $dbname);
+require_once "conexao.php";
 
-if ($conn->connect_error) {
-    die("Falha na conexão: " . $conn->connect_error);
+$velocidade = $_POST["velocidade"] ?? null;
+$rpm = $_POST["rpm"] ?? null;
+
+if ($velocidade === null || $rpm === null) {
+    http_response_code(400);
+    echo "Erro: envie velocidade e rpm.";
+    $conn->close();
+    exit;
 }
 
-// Verifica se os dados corretos vieram via POST da ESP32
-if (isset($_POST['velocidade']) && isset($_POST['rpm'])) {
-    $vel = floatval($_POST['velocidade']);
-    $rpm = floatval($_POST['rpm']);
+if (!is_numeric($velocidade) || !is_numeric($rpm)) {
+    http_response_code(400);
+    echo "Erro: velocidade e rpm precisam ser numeros.";
+    $conn->close();
+    exit;
+}
 
-    // Insere no banco de dados
-    $stmt = $conn->prepare("INSERT INTO dados_telemetria (velocidade, rpm) VALUES (?, ?)");
-    $stmt->bind_param("dd", $vel, $rpm);
-    
-    if ($stmt->execute()) {
-        echo "Dados salvos com sucesso!";
-    } else {
-        echo "Erro ao salvar: " . $conn->error;
-    }
-    $stmt->close();
+$stmt = $conn->prepare("INSERT INTO dados_telemetria (velocidade, rpm) VALUES (?, ?)");
+$stmt->bind_param("dd", $velocidade, $rpm);
+
+if ($stmt->execute()) {
+    echo "Dados salvos com sucesso.";
 } else {
-    echo "Dados incompletos ou requisição inválida.";
+    http_response_code(500);
+    echo "Erro ao salvar dados: " . $stmt->error;
 }
 
+$stmt->close();
 $conn->close();
 ?>

@@ -1,33 +1,23 @@
 <?php
-header('Content-Type: application/json');
+header("Content-Type: application/json; charset=utf-8");
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "velocimetro";
+require_once "conexao.php";
 
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    echo json_encode(["erro" => "Falha na conexão"]);
-    exit();
-}
-
-// Busca estritamente o último registro inserido
-$sql = "SELECT velocidade, rpm FROM dados_telemetria ORDER BY id DESC LIMIT 1";
+$sql = "SELECT velocidade, rpm, id FROM dados_telemetria ORDER BY id DESC LIMIT 1";
 $result = $conn->query($sql);
 
 if ($result && $result->num_rows > 0) {
     $row = $result->fetch_assoc();
     echo json_encode([
-        "velocidade" => floatval($row["velocidade"]),
-        "rpm" => floatval($row["rpm"])
+        "velocidade" => (float) $row["velocidade"],
+        "rpm" => (float) $row["rpm"],
+        "id" => (int) $row["id"]
     ]);
 } else {
-    // Caso o banco ainda esteja vazio
     echo json_encode([
         "velocidade" => 0,
-        "rpm" => 0
+        "rpm" => 0,
+        "id" => null
     ]);
 }
 
