@@ -6,3 +6,4 @@ Projeto Velocímetro Digital IoT com ESP32
 * Gustavo Pimentel
 * Arthur Vilha
 * Vitor Gabriel
+* Kaua Leon
